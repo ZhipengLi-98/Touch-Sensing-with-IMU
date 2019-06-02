@@ -59,14 +59,17 @@ def train(info, features, finger):
             label = 1
         X_train.append(features[i])
         y_train.append(label)
-    clf = SVC(gamma='auto')
+    clf = DecisionTreeClassifier(random_state=0)
+    # clf = SVC(gamma='auto')
     clf.fit(X_train, y_train)
 
-    joblib.dump(clf, direct + "_" + finger + ".model")
+    joblib.dump(clf, "./dtree/" + direct + "_" + finger + ".model")
+    # joblib.dump(clf, direct + "_" + finger + ".model")
 
 
 def test(info, names, features, finger):
-    clf = joblib.load(direct + "_" + finger + ".model")
+    clf = joblib.load("./dtree/" + direct + "_" + finger + ".model")
+    # clf = joblib.load(direct + "_" + finger + ".model")
     accuracy_list = []
     precision_list = []
     recall_list = []
@@ -111,7 +114,7 @@ def test(info, names, features, finger):
 if __name__ == "__main__":
     # ['index1', 'middle1', 'ring1', 'index3', 'middle3']
     delay = 4
-    finger = "index1"
+    finger = "index3"
     info, data, names, features = read_data(delay, finger)
     train(info, features, finger)
     test(info, names, features, finger)
