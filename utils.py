@@ -15,7 +15,6 @@ def qua_to_vec(q):
             float(2 * (0.5 - q[1] ** 2 - q[2] ** 2))]
 
 
-# TODO: cut_l cut_r ???
 def input(files, cut_l=-1, cut_r=-1):
     info = []
     data = []
@@ -34,9 +33,6 @@ def input(files, cut_l=-1, cut_r=-1):
 
                 i += 1
                 frames = []
-                # TODO: ???
-                print(tags)
-                print("key", key)
                 for j in range(i, i + length):
                     tags = lines[j].split()
                     frame = [float(v) for v in tags]

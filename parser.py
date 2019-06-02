@@ -134,7 +134,7 @@ def parse_negative(path):
                 right = random.randint(left_gap, length - right_gap - 1)
                 left = right
                 while left > 0 and int(data[right][0]) - int(data[left][0]) < left_gap:
-                    left -=1
+                    left -= 1
                 begin = left
                 left = right
                 while left + 1 < len(data) and int(data[left][0]) - int(data[right][0]) < right_gap:
@@ -162,6 +162,7 @@ def parse_negative(path):
 
                 if flag:
                     cnt += 1
+                    # Important
                     fout.write(str(-1) + " " + str(len(factors)) + " " + str(key) + "\n")
                     for factor in factors:
                         fout.write(str(factor[0]))
