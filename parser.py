@@ -2,127 +2,114 @@ import os
 import numpy as np
 import math
 import random
-import utils
 
 
-def parse_frames(imu, frames, j):
-    factors_list = []
+def parse_frames(imu, frames, right):
+    factors = []
     left_gap = 500
     right_gap = 100
-    i = j
-    while i > 0 and int(imu[j][0]) - int(imu[i][0]) < left_gap:
-        i = i - 1
-    begin_j = i
-    i = j
-    while i + 1 < len(imu) and int(imu[i][0]) - int(imu[j][0]) < right_gap:
-        i = i + 1
-    end_j = i
+    left = right
+    while left > 0 and int(imu[right][0]) - int(imu[left][0]) < left_gap:
+        left -= 1
+    begin = left
+    left = right
+    while left + 1 < len(imu) and int(imu[left][0]) - int(imu[right][0]) < right_gap:
+        left += 1
+    end = left
     k = 1
-    for i in range(begin_j, end_j + 1):
+    for i in range(begin, end + 1):
         for v in imu[i]:
-            if (math.isnan(float(v))):
-                print('no imu data')
+            if math.isnan(float(v)):
+                print("No IMU data!")
                 return [], -1
-        factors = [v for v in imu[i]]
+        factor = [v for v in imu[i]]
         while k + 1 < len(frames) and int(frames[k][0]) < int(imu[i][0]):
-            k = k + 1
+            k += 1
         duration = (float)(int(frames[k][0]) - int(frames[k - 1][0]))
         if duration > 50:
-            print('no hand data')
+            print("No Hand Data!")
             return [], -1
         t = (float)(int(frames[k][0]) - int(imu[i][0])) / duration
         v0 = np.array([float(v) for v in frames[k - 1]])
         v1 = np.array([float(v) for v in frames[k]])
         v = v0 * t + v1 * (1.0 - t)
-        factors.extend(v)
-        factors_list.append(factors)
+        factor.extend(v)
+        factors.append(factor)
 
-    return factors_list, j - begin_j
+    return factors, right - begin
 
 
-def parse_dir(dir):
-    files = os.listdir(dir)
-    vision = [] * 10
-
-    for i in range(0, len(files)):
-        path = os.path.join(dir, files[i])
-        if path[-3:] == 'txt':
-            input = open(path, 'r')
-
-            if path[-5] == 'U':
-                IMU = input.readlines()
-            else:
-                vision[int(path[-5]) - int('0')] = input.readlines()
-            input.close()
-
+def parse_dir(path):
+    print(path)
+    vision = [None] * 10
+    data = []
+    with open(path, "r") as f:
+        if path[-5] == "U":
+            data = f.readlines()
+        else:
+            vision[int(path[-5]) - 0] = f.readlines()
     imu = []
-    for line in IMU:
+    for line in data:
         line = line.strip('\n')
         tags = line.split()
         imu.append(tags)
 
-    fout = open(dir[2:] + '.txt', 'w')
-    fout_ext = open(dir[2:] + '.ext', 'w')
+    with open(path, "w") as f:
+        with open(path[: -4] + ".ext", "w") as fout:
+            for i in range(10):
+                if not vision[i] == None:
+                    frames = []
+                    for line in vision[i]:
+                        line = line.strip('\n')
+                        tags = line.split()
+                        frames.append(tags)
+                    start = int(frames[0][0])
+                    end = int(frames[-1][0])
+                    candidate = []
+                    for j in range(1, len(imu) - 1):
+                        t = int(imu[j][0])
+                        if start <= t and t <= end:
+                            if int(imu[j - 1][-1]) == 0 and int(imu[j][-1]) == 1 and int(imu[j + 1][-1]) == 1:
+                                candidate.append(j)
+                    tap = [v for v in candidate]
+                    for j in range(len(candidate) - 1):
+                        j0 = candidate[j]
+                        j1 = candidate[j + 1]
+                        t0 = int(imu[j0][0])
+                        t1 = int(imu[j1][0])
+                        if t1 - t0 < 100:  # tapping too close
+                            if j0 in tap:
+                                tap.remove(j0)
+                            if j1 in tap:
+                                tap.remove(j1)
 
-    print(dir[2:])
+                    cnt = 0
+                    for j in candidate:
+                        factors_list, key = parse_frames(imu, frames, j)
+                        if key == -1:  # no hand data
+                            continue
 
-    for i in range(10):
-        frames = []
-        for line in vision[i]:
-            line = line.strip('\n')
-            tags = line.split()
-            frames.append(tags)
-        start = int(frames[0][0])
-        end = int(frames[-1][0])
-        candidate = []
-        for j in range(1, len(imu) - 1):
-            t = int(imu[j][0])
-            if (start <= t and t <= end):
-                if (int(imu[j - 1][-1]) == 0 and int(imu[j][-1]) == 1 and int(imu[j + 1][-1]) == 1):
-                    candidate.append(j)
-        tap = [v for v in candidate]
-        for j in range(len(candidate) - 1):
-            j0 = candidate[j]
-            j1 = candidate[j + 1]
-            t0 = int(imu[j0][0])
-            t1 = int(imu[j1][0])
-            if (t1 - t0 < 100):  # tapping too close
-                if (j0 in tap):
-                    tap.remove(j0)
-                if (j1 in tap):
-                    tap.remove(j1)
+                        key = min(key, len(factors_list))
+                        factors = factors_list[key]
+                        palm_z = float(factors[18])
+                        if palm_z < 0:  # wrong marker direction
+                            continue
 
-        cnt = 0
-        for j in candidate:
-            factors_list, key = parse_frames(imu, frames, j)
-            if key == -1:  # no hand data
-                continue
+                        cnt = cnt + 1
+                        f.write(str(i))
+                        for v in factors:
+                            f.write(' ')
+                            f.write(str(v))
+                        f.write('\n')
 
-            key = min(key, len(factors_list))
-
-            factors = factors_list[key]
-
-            palm_z = float(factors[18])
-            if (palm_z < 0):  # wrong marker direction
-                continue
-
-            cnt = cnt + 1
-
-            fout.write(str(i))
-            for v in factors:
-                fout.write(' ')
-                fout.write(str(v))
-            fout.write('\n')
-
-            fout_ext.write(str(i) + ' ' + str(len(factors_list)) + ' ' + str(key) + '\n')
-            for factors in factors_list:
-                fout_ext.write(str(factors[0]))
-                for k in range(1, len(imu[j])):
-                    fout_ext.write(' ')
-                    fout_ext.write(str(factors[k]))
-                fout_ext.write('\n')
-
-        print(i, cnt)
+                        fout.write(str(i) + ' ' + str(len(factors_list)) + ' ' + str(key) + '\n')
+                        for factors in factors_list:
+                            fout.write(str(factors[0]))
+                            for k in range(1, len(imu[j])):
+                                fout.write(' ')
+                                fout.write(str(factors[k]))
+                            fout.write('\n')
+                    print(i, cnt)
 
 
 # choose random moment in negative files
@@ -165,7 +152,7 @@ def parse_negative(path):
                             flag = False
                     factors.append([j for j in data[i]])
 
-                temp = np.array(factors).reshape(len(factors). -1)
+                temp = np.array(factors).reshape(len(factors), -1)
                 # [2, cols - 1)
                 # check the imu data
                 for i in range(2, np.size(temp, 1) - 1):
@@ -186,26 +173,23 @@ def parse_negative(path):
 
 def positive_parser():
     files = os.listdir("./data/")
-    for i in range(len(files)):
-        path = os.path.join("./data/", files[i])
-        if os.path.isdir(path):
-            if (files[i] + '.txt') in files and (files[i] + '.ext') in files:
+    for f in files:
+        path = os.path.join("./data/", f)
+        if os.path.isfile(path):
+            if f[:-3] + "ext" in files:
                 continue
-            direction, name, finger = utils.get_file_info(files[i])
-            # TODO: why this?
-            if name == 'xcy' and finger == 'ring1' and direction == 'vertical':
-                parse_dir(path)
+            parse_dir(path)
 
 
 def negative_parser():
     files = os.listdir("./negative/")
-    for i in range(len(files)):
-        path = os.path.join("./negative/", files[i])
-        if os.path.isfile(path) and files[i][-3:] == 'txt':
-            if (files[i][:-3] + '.ext') in files:
+    for f in files:
+        path = os.path.join("./negative/", f)
+        if os.path.isfile(path) and f[-3:] == "txt":
+            if f[: -3] + "ext" in files:
                 continue
             parse_negative(path)
 
 
 if __name__ == "__main__":
-    negative_parser()
+    positive_parser()
