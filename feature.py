@@ -69,12 +69,17 @@ def normalize_X(X_train, X_test):
     return X_train, X_test
 
 
-def calc_precision_recall(y_test, y_pred):
+def calc_result(y_test, y_pred):
     pre_a = 0
     pre_b = 0
     rec_a = 0
     rec_b = 0
+    acc_a = 0
+    acc_b = 0
     for i in range(len(y_test)):
+        acc_b += 1
+        if y_test[i] == y_pred[i]:
+            acc_a += 1
         if y_test[i] == 1:
             rec_b += 1
             if y_test[i] == y_pred[i]:
@@ -91,5 +96,9 @@ def calc_precision_recall(y_test, y_pred):
         recall = 1
     else:
         recall = float(rec_a) / rec_b
-    return precision, recall
+    if acc_b == 0:
+        accuracy = 1
+    else:
+        accuracy = float(acc_a) / acc_b
+    return accuracy, precision, recall
 

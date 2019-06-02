@@ -49,6 +49,7 @@ def analyze(delay, finger):
     label_0 = 0
     label_1 = 0
 
+    accuracy_list = []
     precision_list = []
     recall_list = []
     f1_list = []
@@ -84,25 +85,31 @@ def analyze(delay, finger):
             print("No Data!")
         else:
             y_pred = clf.predict(X_test)
-            precision, recall = feature.calc_precision_recall(y_test, y_pred)
+            accuracy, precision, recall = feature.calc_result(y_test, y_pred)
             f1 = 2 * precision * recall / (precision + recall)
+            accuracy_list.append(accuracy)
             precision_list.append(precision)
             recall_list.append(recall)
             f1_list.append(f1)
 
+    accuracy_list = np.array(accuracy_list)
     precision_list = np.array(precision_list)
     recall_list = np.array(recall_list)
     f1_list = np.array(f1_list)
 
+    acc_str = ""
+    for v in accuracy_list:
+        acc_str += " " + str(v)
     pre_str = ""
     for v in precision_list:
-        pre_str = pre_str + " " + str(v)
+        pre_str += " " + str(v)
     rec_str = ""
     for v in recall_list:
-        rec_str = rec_str + " " + str(v)
+        rec_str += " " + str(v)
     f1_str = ""
     for v in f1_list:
-        f1_str = f1_str + " " + str(v)
+        f1_str += " " + str(v)
+    print("Accuracy:", acc_str)
     print("Precision:", pre_str)
     print("Recall:", rec_str)
     print("F1:", f1_str)
