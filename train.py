@@ -9,7 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 direct = "vertical"
 
 
-def analyze(delay, finger):
+def train(delay, finger):
     names = []
     files = []
 
@@ -117,4 +117,4 @@ def analyze(delay, finger):
 
 if __name__ == "__main__":
     # ['index1', 'middle1', 'ring1', 'index3', 'middle3']
-    analyze(4, "index1")
+    train(4, "index1")
