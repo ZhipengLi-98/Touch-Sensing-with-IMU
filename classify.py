@@ -2,6 +2,7 @@ from train import *
 from feature import *
 import numpy as np
 import utils
+from sklearn.externals import joblib
 
 
 datas = []
@@ -51,3 +52,10 @@ def classify(clf, data):
         datas.append(data)
         return 0
 
+
+if __name__ == "__main__":
+    direct = "vertical"
+    finger = "index1"
+    clf = joblib.load(direct + "_" + finger + ".model")
+    data = "Current Data"
+    result = classify(clf, data)
