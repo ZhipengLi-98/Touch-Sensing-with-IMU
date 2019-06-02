@@ -75,6 +75,7 @@ def analyze(delay, finger):
                 X_train.append(features[i])
                 y_train.append(label)
 
+        # X_train, X_test = feature.normalize_X(X_train, X_test)
         # clf = DecisionTreeClassifier(random_state=0)
         clf = SVC(gamma='auto')
         clf.fit(X_train, y_train)
